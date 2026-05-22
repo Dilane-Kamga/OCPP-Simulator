@@ -202,7 +202,7 @@ public class SimulatorManager {
             try {
                 s.sendHeartbeat();
             } catch (Exception e) {
-                log.debug("heartbeat error for {}: {}", s.getConfig().id(), e.getMessage());
+                log.warn("heartbeat error for {}: {}", s.getConfig().id(), e.getMessage());
             }
         }
     }
@@ -219,7 +219,7 @@ public class SimulatorManager {
                     s.tickMeter(elapsed);
                 }
             } catch (Exception e) {
-                log.debug("meter tick error for {}: {}", s.getConfig().id(), e.getMessage());
+                log.warn("meter tick error for {}: {}", s.getConfig().id(), e.getMessage());
             }
         }
     }
@@ -243,7 +243,7 @@ public class SimulatorManager {
                     scheduleRecovery(s);
                 }
             } catch (Exception e) {
-                log.debug("world tick error for {}: {}", s.getConfig().id(), e.getMessage());
+                log.warn("world tick error for {}: {}", s.getConfig().id(), e.getMessage());
             }
         }
     }

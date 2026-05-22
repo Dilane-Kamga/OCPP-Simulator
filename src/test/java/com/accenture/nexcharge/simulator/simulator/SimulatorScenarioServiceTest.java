@@ -73,6 +73,23 @@ class SimulatorScenarioServiceTest {
     }
 
     @Test
+    void disconnectOneResetsTargetSimulator() {
+        when(manager.get("BORNE_A")).thenReturn(s1);
+        service.run(new ScenarioRequest("DISCONNECT_ONE", "BORNE_A"));
+        verify(s1).reset();
+        verify(s2, never()).reset();
+    }
+
+    @Test
+    void peakLoadStartsAvailableAndRecoversFaulted() {
+        when(s1.getState()).thenReturn(SimulatorState.AVAILABLE);
+        when(s2.getState()).thenReturn(SimulatorState.FAULTED);
+        service.run(new ScenarioRequest("PEAK_LOAD", null));
+        verify(s1).startSession(eq(1), anyString());
+        verify(s2).recoverFromFault();
+    }
+
+    @Test
     void unknownScenarioThrows() {
         assertThatThrownBy(() -> service.run(new ScenarioRequest("BOGUS", null)))
                 .isInstanceOf(IllegalArgumentException.class);
