@@ -50,4 +50,15 @@ class SimulatorClientHandlerTest {
         assertThat(conf.getStatus()).isEqualTo(RemoteStartStopStatus.Accepted);
         verify(commands).onRemoteStart(1, "RFID-0001");
     }
+
+    @Test
+    void remoteStartWithNullConnectorDefaultsToOne() {
+        RemoteStartTransactionRequest req = new RemoteStartTransactionRequest("RFID-0002");
+        // connectorId left null
+
+        RemoteStartTransactionConfirmation conf = handler.handleRemoteStartTransactionRequest(req);
+
+        assertThat(conf.getStatus()).isEqualTo(RemoteStartStopStatus.Accepted);
+        verify(commands).onRemoteStart(1, "RFID-0002");
+    }
 }

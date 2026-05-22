@@ -35,7 +35,7 @@ public class JsonOcppClient implements OcppClient {
     private final ClientCoreProfile core;
     private final ClientRemoteTriggerProfile remoteTrigger;
 
-    private JSONClient jsonClient;
+    private volatile JSONClient jsonClient;
     private final AtomicBoolean connected = new AtomicBoolean(false);
 
     public JsonOcppClient(String chargePointId, String csmsUrl,
@@ -47,18 +47,23 @@ public class JsonOcppClient implements OcppClient {
     }
 
     @Override
-    public boolean connect() {
+    public synchronized boolean connect() {
         long backoff = INITIAL_BACKOFF_MS;
         for (int attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+            JSONClient candidate = null;
             try {
-                jsonClient = new JSONClient(core, chargePointId);
-                jsonClient.addFeatureProfile(remoteTrigger);
-                jsonClient.connect(csmsUrl, null);
+                candidate = new JSONClient(core, chargePointId);
+                candidate.addFeatureProfile(remoteTrigger);
+                candidate.connect(csmsUrl, null);
+                jsonClient = candidate;
                 connected.set(true);
                 log.info("[{}] Connected to CSMS at {}", chargePointId, csmsUrl);
                 return true;
             } catch (Exception e) {
                 log.warn("[{}] Connection attempt {} failed: {}", chargePointId, attempt, e.getMessage());
+                if (candidate != null) {
+                    try { candidate.disconnect(); } catch (Exception ignored) { /* best-effort */ }
+                }
                 try {
                     Thread.sleep(backoff);
                 } catch (InterruptedException ie) {
@@ -91,13 +96,14 @@ public class JsonOcppClient implements OcppClient {
 
     @Override
     public CompletableFuture<?> send(Request request) {
-        if (jsonClient == null || !connected.get()) {
+        JSONClient client = jsonClient;
+        if (client == null || !connected.get()) {
             CompletableFuture<Void> failed = new CompletableFuture<>();
             failed.completeExceptionally(new IllegalStateException("Not connected"));
             return failed;
         }
         try {
-            return jsonClient.send(request).toCompletableFuture();
+            return client.send(request).toCompletableFuture();
         } catch (Exception e) {
             CompletableFuture<Void> failed = new CompletableFuture<>();
             failed.completeExceptionally(e);

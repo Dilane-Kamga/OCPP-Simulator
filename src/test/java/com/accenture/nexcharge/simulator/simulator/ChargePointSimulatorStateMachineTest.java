@@ -11,8 +11,8 @@ import java.util.concurrent.CompletableFuture;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -117,7 +117,7 @@ class ChargePointSimulatorStateMachineTest {
     @Test
     void bootSendsBootNotificationAndStatusNotifications() {
         simulator.boot();
-        // BootNotification + 1 StatusNotification(connector=0) + 1 per connector
-        verify(client, atLeast(2)).send(any());
+        // 1 BootNotification + 1 StatusNotification(connector=0) + 1 StatusNotification per connector (config has 1)
+        verify(client, times(3)).send(any());
     }
 }
