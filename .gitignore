@@ -3,5 +3,6 @@ data/
 *.log
 .idea/
 .vscode/
+.claude/
 *.iml
 .DS_Store

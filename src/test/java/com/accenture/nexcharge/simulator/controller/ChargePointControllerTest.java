@@ -44,7 +44,9 @@ class ChargePointControllerTest {
     @Test
     void getByIdReturns404WhenMissing() throws Exception {
         when(service.getById("UNKNOWN")).thenThrow(new ChargePointNotFoundException("UNKNOWN"));
-        mvc.perform(get("/api/chargepoints/UNKNOWN")).andExpect(status().isNotFound());
+        mvc.perform(get("/api/chargepoints/UNKNOWN"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.error").value("Charge point not found: UNKNOWN"));
     }
 
     @Test
@@ -54,5 +56,13 @@ class ChargePointControllerTest {
         mvc.perform(get("/api/chargepoints/BORNE_A/connectors"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].currentPowerKw").value(7.2));
+    }
+
+    @Test
+    void getConnectorsReturns404WhenChargePointMissing() throws Exception {
+        when(service.getConnectors("UNKNOWN")).thenThrow(new ChargePointNotFoundException("UNKNOWN"));
+        mvc.perform(get("/api/chargepoints/UNKNOWN/connectors"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.error").value("Charge point not found: UNKNOWN"));
     }
 }
