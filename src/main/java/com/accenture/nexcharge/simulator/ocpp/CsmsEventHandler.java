@@ -240,7 +240,17 @@ public class CsmsEventHandler implements ServerCoreEventHandler {
                             .chargePointId(chargePointId)
                             .connectorId(request.getConnectorId())
                             .build());
-            connector.setStatus(newStatus);
+
+            // Maintenance-block gate: if the connector is administratively blocked, suppress the physical
+            // status update to preserve the operator-controlled state — EXCEPT for Faulted, which is a
+            // physical safety signal and must always be reflected regardless of admin block.
+            boolean isBlocked = Boolean.TRUE.equals(connector.getBlocked());
+            if (!isBlocked || newStatus == ConnectorStatus.Faulted) {
+                connector.setStatus(newStatus);
+            } else {
+                log.info("[CSMS] StatusNotification for {} connector {} suppressed (maintenance block): reported status {}",
+                        chargePointId, request.getConnectorId(), newStatus);
+            }
             connector.setErrorCode(errorCode);
             connectorRepository.save(connector);
 

@@ -11,4 +11,5 @@ public interface ConnectorRepository extends JpaRepository<ConnectorEntity, Long
     List<ConnectorEntity> findByChargePointIdOrderByConnectorIdAsc(String chargePointId);
     Optional<ConnectorEntity> findByChargePointIdAndConnectorId(String chargePointId, Integer connectorId);
     long countByStatus(ConnectorStatus status);
+    long countByBlocked(Boolean blocked);
 }

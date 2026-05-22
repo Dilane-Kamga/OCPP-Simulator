@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.util.List;
 
 @Service
@@ -41,6 +42,30 @@ public class ChargePointService {
                 .toList();
     }
 
+    @Transactional
+    public ConnectorDto blockConnector(String chargePointId, int connectorId, String reason) {
+        ConnectorEntity connector = connectorRepository
+                .findByChargePointIdAndConnectorId(chargePointId, connectorId)
+                .orElseThrow(() -> new ConnectorNotFoundException(chargePointId, connectorId));
+        connector.setBlocked(true);
+        connector.setBlockedReason(reason);
+        connector.setBlockedAt(Instant.now());
+        connectorRepository.save(connector);
+        return toConnectorDto(connector);
+    }
+
+    @Transactional
+    public ConnectorDto unblockConnector(String chargePointId, int connectorId) {
+        ConnectorEntity connector = connectorRepository
+                .findByChargePointIdAndConnectorId(chargePointId, connectorId)
+                .orElseThrow(() -> new ConnectorNotFoundException(chargePointId, connectorId));
+        connector.setBlocked(false);
+        connector.setBlockedReason(null);
+        connector.setBlockedAt(null);
+        connectorRepository.save(connector);
+        return toConnectorDto(connector);
+    }
+
     private ChargePointDto toDto(ChargePointEntity cp) {
         List<ConnectorDto> connectors = connectorRepository
                 .findByChargePointIdOrderByConnectorIdAsc(cp.getChargePointId()).stream()
@@ -62,7 +87,7 @@ public class ChargePointService {
         );
     }
 
-    private ConnectorDto toConnectorDto(ConnectorEntity c) {
+    public ConnectorDto toConnectorDto(ConnectorEntity c) {
         return new ConnectorDto(
                 c.getConnectorId(),
                 c.getStatus(),
@@ -71,7 +96,10 @@ public class ChargePointService {
                 c.getVoltage(),
                 c.getTemperatureCelsius(),
                 c.getTotalEnergyKwh(),
-                c.getErrorCode()
+                c.getErrorCode(),
+                Boolean.TRUE.equals(c.getBlocked()),
+                c.getBlockedReason(),
+                c.getBlockedAt()
         );
     }
 }

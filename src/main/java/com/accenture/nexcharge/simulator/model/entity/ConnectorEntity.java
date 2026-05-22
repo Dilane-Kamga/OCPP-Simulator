@@ -4,6 +4,8 @@ import com.accenture.nexcharge.simulator.model.enums.ConnectorStatus;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.Instant;
+
 @Entity
 @Table(
     name = "connectors",
@@ -46,4 +48,17 @@ public class ConnectorEntity {
 
     @Column(name = "error_code", length = 50)
     private String errorCode;
+
+    /** Administrative maintenance block: when true, incoming StatusNotification does not overwrite status. */
+    @Builder.Default
+    @Column(nullable = false)
+    private Boolean blocked = false;
+
+    /** Human-readable reason for the maintenance block (e.g. "Quarterly maintenance"). */
+    @Column(name = "blocked_reason", length = 200)
+    private String blockedReason;
+
+    /** Timestamp when the maintenance block was set. */
+    @Column(name = "blocked_at")
+    private Instant blockedAt;
 }

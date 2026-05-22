@@ -39,6 +39,7 @@ public class StatsService {
                 .sum();
 
         BorneCounts counts = aggregateBorneCounts(allConnectors);
+        long blockedNow = connectorRepository.countByBlocked(true);
 
         List<ChargingSessionEntity> completedSessions = sessionRepository.findByStatus(SessionStatus.Completed);
         Long avgDurationMinutes = computeAverageDuration(completedSessions);
@@ -50,6 +51,7 @@ public class StatsService {
                 counts.charging,
                 counts.available,
                 counts.faulted,
+                blockedNow,
                 sessionRepository.countByStatus(SessionStatus.Active),
                 round1(totalPowerKw),
                 round1(sessionRepository.sumEnergyDeliveredSince(startOfToday)),

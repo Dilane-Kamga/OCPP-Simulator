@@ -6,6 +6,7 @@ public record StatsDto(
         long chargingNow,
         long availableNow,
         long faultedNow,
+        long blockedNow,
         long activeSessionsCount,
         double totalPowerKw,
         double todayEnergyKwh,

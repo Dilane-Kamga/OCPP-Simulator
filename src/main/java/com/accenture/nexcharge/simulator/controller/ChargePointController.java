@@ -1,10 +1,12 @@
 package com.accenture.nexcharge.simulator.controller;
 
+import com.accenture.nexcharge.simulator.model.dto.BlockConnectorRequest;
 import com.accenture.nexcharge.simulator.model.dto.ChargePointDto;
 import com.accenture.nexcharge.simulator.model.dto.ConnectorDto;
 import com.accenture.nexcharge.simulator.service.ChargePointService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -34,5 +36,22 @@ public class ChargePointController {
     @GetMapping("/{id}/connectors")
     public List<ConnectorDto> getConnectors(@PathVariable String id) {
         return service.getConnectors(id);
+    }
+
+    @Operation(summary = "Admin-block a connector (suppresses physical status updates until unblocked)")
+    @PutMapping("/{id}/connectors/{connectorId}/block")
+    public ConnectorDto blockConnector(
+            @PathVariable String id,
+            @PathVariable int connectorId,
+            @Valid @RequestBody BlockConnectorRequest request) {
+        return service.blockConnector(id, connectorId, request.reason());
+    }
+
+    @Operation(summary = "Remove the admin-block from a connector")
+    @DeleteMapping("/{id}/connectors/{connectorId}/block")
+    public ConnectorDto unblockConnector(
+            @PathVariable String id,
+            @PathVariable int connectorId) {
+        return service.unblockConnector(id, connectorId);
     }
 }

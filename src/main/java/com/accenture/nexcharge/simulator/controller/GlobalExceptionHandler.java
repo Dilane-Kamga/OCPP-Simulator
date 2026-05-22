@@ -1,6 +1,7 @@
 package com.accenture.nexcharge.simulator.controller;
 
 import com.accenture.nexcharge.simulator.service.ChargePointNotFoundException;
+import com.accenture.nexcharge.simulator.service.ConnectorNotFoundException;
 import com.accenture.nexcharge.simulator.service.SessionNotFoundException;
 import com.accenture.nexcharge.simulator.service.TagNotFoundException;
 import jakarta.validation.ConstraintViolationException;
@@ -15,7 +16,7 @@ import java.util.Map;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    @ExceptionHandler({ChargePointNotFoundException.class, SessionNotFoundException.class, TagNotFoundException.class})
+    @ExceptionHandler({ChargePointNotFoundException.class, SessionNotFoundException.class, TagNotFoundException.class, ConnectorNotFoundException.class})
     public ResponseEntity<Map<String, String>> handleNotFound(RuntimeException ex) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
                 .body(Map.of("error", ex.getMessage()));

@@ -57,6 +57,7 @@ class StatsServiceTest {
                 .chargePointId("BORNE_E").connectorId(2)
                 .status(ConnectorStatus.Available).build();
         when(connectorRepository.findAll()).thenReturn(List.of(a1, b1, c1, d1, e1, e2));
+        when(connectorRepository.countByBlocked(true)).thenReturn(0L);
 
         when(sessionRepository.countSince(any())).thenReturn(8L);
         when(sessionRepository.countSinceWithStatus(any(), org.mockito.ArgumentMatchers.eq(SessionStatus.Completed)))
@@ -92,6 +93,7 @@ class StatsServiceTest {
         when(chargePointRepository.countByOnline(true)).thenReturn(0L);
         when(sessionRepository.countByStatus(any())).thenReturn(0L);
         when(connectorRepository.findAll()).thenReturn(List.of());
+        when(connectorRepository.countByBlocked(true)).thenReturn(0L);
         when(sessionRepository.countSince(any())).thenReturn(0L);
         when(sessionRepository.countSinceWithStatus(any(), any())).thenReturn(0L);
         when(sessionRepository.sumEnergyDeliveredSince(any())).thenReturn(0.0);
@@ -115,6 +117,7 @@ class StatsServiceTest {
                 .chargePointId("BORNE_X").connectorId(2)
                 .status(ConnectorStatus.Faulted).build();
         when(connectorRepository.findAll()).thenReturn(List.of(ch, ft));
+        when(connectorRepository.countByBlocked(true)).thenReturn(0L);
         when(sessionRepository.countSince(any())).thenReturn(0L);
         when(sessionRepository.countSinceWithStatus(any(), any())).thenReturn(0L);
         when(sessionRepository.sumEnergyDeliveredSince(any())).thenReturn(0.0);
@@ -124,5 +127,27 @@ class StatsServiceTest {
         assertThat(stats.faultedNow()).isEqualTo(1);
         assertThat(stats.chargingNow()).isEqualTo(0);
         assertThat(stats.availableNow()).isEqualTo(0);
+    }
+
+    @Test
+    void blockedNowCountsBlockedConnectors() {
+        when(chargePointRepository.count()).thenReturn(2L);
+        when(chargePointRepository.countByOnline(true)).thenReturn(2L);
+        when(sessionRepository.countByStatus(any())).thenReturn(0L);
+        ConnectorEntity blocked = ConnectorEntity.builder()
+                .chargePointId("BORNE_A").connectorId(1)
+                .status(ConnectorStatus.Available).blocked(true).build();
+        ConnectorEntity normal = ConnectorEntity.builder()
+                .chargePointId("BORNE_B").connectorId(1)
+                .status(ConnectorStatus.Available).blocked(false).build();
+        when(connectorRepository.findAll()).thenReturn(List.of(blocked, normal));
+        when(connectorRepository.countByBlocked(true)).thenReturn(1L);
+        when(sessionRepository.countSince(any())).thenReturn(0L);
+        when(sessionRepository.countSinceWithStatus(any(), any())).thenReturn(0L);
+        when(sessionRepository.sumEnergyDeliveredSince(any())).thenReturn(0.0);
+        when(sessionRepository.findByStatus(SessionStatus.Completed)).thenReturn(List.of());
+
+        StatsDto stats = service.compute();
+        assertThat(stats.blockedNow()).isEqualTo(1);
     }
 }

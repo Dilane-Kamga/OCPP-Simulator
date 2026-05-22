@@ -32,7 +32,7 @@ class ChargePointControllerTest {
         ChargePointDto cp = new ChargePointDto("BORNE_A", "Legrand", "Green'Up Premium",
                 "LGR-001", "1.4.2", ChargePointStatus.Available, true,
                 Instant.now(), Instant.now(), "NoError",
-                List.of(new ConnectorDto(1, ConnectorStatus.Available, 0.0, 0.0, 230.0, 22.0, 0.0, "NoError")));
+                List.of(new ConnectorDto(1, ConnectorStatus.Available, 0.0, 0.0, 230.0, 22.0, 0.0, "NoError", false, null, null)));
         when(service.getAll()).thenReturn(List.of(cp));
 
         mvc.perform(get("/api/chargepoints"))
@@ -52,7 +52,7 @@ class ChargePointControllerTest {
     @Test
     void getConnectorsReturnsList() throws Exception {
         when(service.getConnectors("BORNE_A")).thenReturn(List.of(
-                new ConnectorDto(1, ConnectorStatus.Charging, 7.2, 31.0, 230.0, 38.5, 14.5, "NoError")));
+                new ConnectorDto(1, ConnectorStatus.Charging, 7.2, 31.0, 230.0, 38.5, 14.5, "NoError", false, null, null)));
         mvc.perform(get("/api/chargepoints/BORNE_A/connectors"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].currentPowerKw").value(7.2));

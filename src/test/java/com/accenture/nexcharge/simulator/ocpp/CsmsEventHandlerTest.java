@@ -4,6 +4,7 @@ import com.accenture.nexcharge.simulator.config.SimulatorProperties;
 import com.accenture.nexcharge.simulator.model.entity.ChargePointEntity;
 import com.accenture.nexcharge.simulator.model.entity.ChargingSessionEntity;
 import com.accenture.nexcharge.simulator.model.entity.ConnectorEntity;
+import com.accenture.nexcharge.simulator.model.enums.ConnectorStatus;
 import com.accenture.nexcharge.simulator.model.enums.SessionStatus;
 import com.accenture.nexcharge.simulator.repository.ChargePointRepository;
 import com.accenture.nexcharge.simulator.repository.ChargingSessionRepository;
@@ -191,5 +192,72 @@ class CsmsEventHandlerTest {
         DataTransferConfirmation conf = handler.handleDataTransferRequest(sessionId, req);
 
         assertThat(conf.getStatus()).isEqualTo(DataTransferStatus.Accepted);
+    }
+
+    // ---- Maintenance-block gate tests ----
+
+    @Test
+    void statusNotification_blockedConnector_nonFaulted_doesNotOverwriteStatus() {
+        UUID sessionId = UUID.randomUUID();
+        when(registry.findChargePointId(sessionId)).thenReturn(Optional.of("BORNE_A"));
+        // Connector is blocked, currently shows Available (operator-controlled state)
+        ConnectorEntity connector = ConnectorEntity.builder()
+                .chargePointId("BORNE_A").connectorId(1)
+                .status(ConnectorStatus.Available)
+                .blocked(true).blockedReason("Maintenance").build();
+        when(connectorRepository.findByChargePointIdAndConnectorId("BORNE_A", 1))
+                .thenReturn(Optional.of(connector));
+
+        // Borne reports Charging — should be suppressed while blocked
+        StatusNotificationRequest req = new StatusNotificationRequest(
+                1, ChargePointErrorCode.NoError, ChargePointStatus.Charging);
+        handler.handleStatusNotificationRequest(sessionId, req);
+
+        ArgumentCaptor<ConnectorEntity> captor = ArgumentCaptor.forClass(ConnectorEntity.class);
+        verify(connectorRepository).save(captor.capture());
+        // Status must NOT have changed to Charging
+        assertThat(captor.getValue().getStatus()).isEqualTo(ConnectorStatus.Available);
+    }
+
+    @Test
+    void statusNotification_blockedConnector_faultedStatus_isAllowedThrough() {
+        UUID sessionId = UUID.randomUUID();
+        when(registry.findChargePointId(sessionId)).thenReturn(Optional.of("BORNE_A"));
+        // Connector is blocked but borne reports a physical fault
+        ConnectorEntity connector = ConnectorEntity.builder()
+                .chargePointId("BORNE_A").connectorId(1)
+                .status(ConnectorStatus.Available)
+                .blocked(true).blockedReason("Maintenance").build();
+        when(connectorRepository.findByChargePointIdAndConnectorId("BORNE_A", 1))
+                .thenReturn(Optional.of(connector));
+
+        // Physical safety fault must override the admin block
+        StatusNotificationRequest req = new StatusNotificationRequest(
+                1, ChargePointErrorCode.GroundFailure, ChargePointStatus.Faulted);
+        handler.handleStatusNotificationRequest(sessionId, req);
+
+        ArgumentCaptor<ConnectorEntity> captor = ArgumentCaptor.forClass(ConnectorEntity.class);
+        verify(connectorRepository).save(captor.capture());
+        assertThat(captor.getValue().getStatus()).isEqualTo(ConnectorStatus.Faulted);
+    }
+
+    @Test
+    void statusNotification_unblockedConnector_updatesStatusNormally() {
+        UUID sessionId = UUID.randomUUID();
+        when(registry.findChargePointId(sessionId)).thenReturn(Optional.of("BORNE_A"));
+        ConnectorEntity connector = ConnectorEntity.builder()
+                .chargePointId("BORNE_A").connectorId(1)
+                .status(ConnectorStatus.Available)
+                .blocked(false).build();
+        when(connectorRepository.findByChargePointIdAndConnectorId("BORNE_A", 1))
+                .thenReturn(Optional.of(connector));
+
+        StatusNotificationRequest req = new StatusNotificationRequest(
+                1, ChargePointErrorCode.NoError, ChargePointStatus.Charging);
+        handler.handleStatusNotificationRequest(sessionId, req);
+
+        ArgumentCaptor<ConnectorEntity> captor = ArgumentCaptor.forClass(ConnectorEntity.class);
+        verify(connectorRepository).save(captor.capture());
+        assertThat(captor.getValue().getStatus()).isEqualTo(ConnectorStatus.Charging);
     }
 }
