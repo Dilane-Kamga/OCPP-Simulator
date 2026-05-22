@@ -4,5 +4,6 @@ data/
 .idea/
 .vscode/
 .claude/
+.superpowers/
 *.iml
 .DS_Store
