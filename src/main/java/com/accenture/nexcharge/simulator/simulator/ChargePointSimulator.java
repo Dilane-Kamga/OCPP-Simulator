@@ -21,6 +21,7 @@ import java.time.Duration;
 import java.time.ZonedDateTime;
 import java.util.Locale;
 import java.util.Random;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -238,14 +239,23 @@ public class ChargePointSimulator {
     }
 
     /**
-     * Send a StartTransaction. Used by the manager once it has obtained the assigned
-     * transactionId from the CSMS confirmation. The simulator tracks the meter locally
-     * so {@code currentMeterWh} reflects the start value.
+     * Send a StartTransaction for the currently pending session and return the future of
+     * the CSMS confirmation. The simulator tracks the meter locally so {@code currentMeterWh}
+     * reflects the start value.
+     *
+     * @return a future completing with the OCPP {@code StartTransactionConfirmation}, or a
+     *         failed future if no session is pending (i.e. {@code currentConnectorId} or
+     *         {@code currentIdTag} is null).
      */
-    public synchronized void sendStartTransaction(int connectorId, String idTag) {
+    public synchronized CompletableFuture<?> sendStartTransactionAndAwait() {
+        if (currentConnectorId == null || currentIdTag == null) {
+            CompletableFuture<Integer> failed = new CompletableFuture<>();
+            failed.completeExceptionally(new IllegalStateException("No pending session"));
+            return failed;
+        }
         StartTransactionRequest req = new StartTransactionRequest(
-                connectorId, idTag, (int) currentMeterWh, ZonedDateTime.now());
-        client.send(req);
+                currentConnectorId, currentIdTag, (int) currentMeterWh, ZonedDateTime.now());
+        return client.send(req);
     }
 
     private void sendStopTransaction(String reason) {
