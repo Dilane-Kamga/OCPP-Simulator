@@ -27,7 +27,7 @@ class LogControllerTest {
 
     @Test
     void searchByFilters() throws Exception {
-        when(service.search(eq("BORNE_A"), eq("Heartbeat"), eq(LogDirection.IN), eq(60), eq(20)))
+        when(service.search(eq("BORNE_A"), eq("Heartbeat"), eq(LogDirection.IN), eq(60), eq(20), eq(0)))
                 .thenReturn(List.of(new OcppLogDto(42L, "BORNE_A", LogDirection.IN, "Heartbeat",
                         "{}", Instant.parse("2026-05-22T14:30:10Z"))));
         mvc.perform(get("/api/logs")

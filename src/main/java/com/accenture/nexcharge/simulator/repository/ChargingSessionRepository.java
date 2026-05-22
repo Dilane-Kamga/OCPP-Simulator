@@ -2,6 +2,7 @@ package com.accenture.nexcharge.simulator.repository;
 
 import com.accenture.nexcharge.simulator.model.entity.ChargingSessionEntity;
 import com.accenture.nexcharge.simulator.model.enums.SessionStatus;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -28,6 +29,20 @@ public interface ChargingSessionRepository extends JpaRepository<ChargingSession
             @Param("chargePointId") String chargePointId,
             @Param("from") Instant from,
             @Param("to") Instant to
+    );
+
+    @Query("SELECT s FROM ChargingSessionEntity s WHERE " +
+           "(:status IS NULL OR s.status = :status) AND " +
+           "(:chargePointId IS NULL OR s.chargePointId = :chargePointId) AND " +
+           "(:from IS NULL OR s.startTime >= :from) AND " +
+           "(:to IS NULL OR s.startTime <= :to) " +
+           "ORDER BY s.startTime DESC")
+    List<ChargingSessionEntity> search(
+            @Param("status") SessionStatus status,
+            @Param("chargePointId") String chargePointId,
+            @Param("from") Instant from,
+            @Param("to") Instant to,
+            Pageable pageable
     );
 
     @Query("SELECT COUNT(s) FROM ChargingSessionEntity s WHERE s.startTime >= :from")

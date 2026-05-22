@@ -15,6 +15,7 @@ import java.time.Instant;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -29,7 +30,7 @@ class SessionControllerTest {
 
     @Test
     void searchActiveSessions() throws Exception {
-        when(service.search(eq(SessionStatus.Active), any(), any(), any())).thenReturn(List.of(
+        when(service.search(eq(SessionStatus.Active), any(), any(), any(), anyInt(), anyInt())).thenReturn(List.of(
                 new SessionDto(1L, 1001, "BORNE_A", 1, "RFID-001",
                         Instant.parse("2026-05-22T12:30:00Z"), null,
                         500000.0, null, 14.8, null, SessionStatus.Active, 120L)));

@@ -14,6 +14,7 @@ import java.time.Instant;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -28,7 +29,7 @@ class MeterControllerTest {
 
     @Test
     void returnsMeterValues() throws Exception {
-        when(service.findRecent(eq("BORNE_A"), eq(1), eq(60))).thenReturn(List.of(
+        when(service.findRecent(eq("BORNE_A"), eq(1), eq(60), anyInt(), anyInt())).thenReturn(List.of(
                 new MeterValueDto(Instant.parse("2026-05-22T14:30:10Z"), 1, 1001,
                         "Power.Active.Import", 7200.0, "W")));
 
@@ -40,7 +41,7 @@ class MeterControllerTest {
 
     @Test
     void returns404WhenChargePointMissing() throws Exception {
-        when(service.findRecent(eq("UNKNOWN"), any(), any()))
+        when(service.findRecent(eq("UNKNOWN"), any(), any(), anyInt(), anyInt()))
                 .thenThrow(new ChargePointNotFoundException("UNKNOWN"));
         mvc.perform(get("/api/meter-values/UNKNOWN"))
                 .andExpect(status().isNotFound())

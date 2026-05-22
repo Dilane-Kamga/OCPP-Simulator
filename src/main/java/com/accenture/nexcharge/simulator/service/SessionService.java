@@ -1,5 +1,6 @@
 package com.accenture.nexcharge.simulator.service;
 
+import com.accenture.nexcharge.simulator.config.OffsetLimitPageable;
 import com.accenture.nexcharge.simulator.model.dto.SessionDto;
 import com.accenture.nexcharge.simulator.model.entity.ChargingSessionEntity;
 import com.accenture.nexcharge.simulator.model.enums.SessionStatus;
@@ -17,10 +18,19 @@ import java.util.List;
 @Transactional(readOnly = true)
 public class SessionService {
 
+    private static final int DEFAULT_LIMIT = 100;
+
     private final ChargingSessionRepository repository;
 
+    /** Backward-compatible overload used by existing callers and tests. */
     public List<SessionDto> search(SessionStatus status, String chargePointId, Instant from, Instant to) {
-        return repository.search(status, chargePointId, from, to).stream()
+        return search(status, chargePointId, from, to, DEFAULT_LIMIT, 0);
+    }
+
+    public List<SessionDto> search(SessionStatus status, String chargePointId,
+                                   Instant from, Instant to, int limit, int offset) {
+        return repository.search(status, chargePointId, from, to, new OffsetLimitPageable(offset, limit))
+                .stream()
                 .map(this::toDto)
                 .toList();
     }
