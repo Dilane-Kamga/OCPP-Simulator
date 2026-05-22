@@ -3,7 +3,6 @@ package com.accenture.nexcharge.simulator.service;
 import com.accenture.nexcharge.simulator.model.dto.StatsDto;
 import com.accenture.nexcharge.simulator.model.entity.ChargingSessionEntity;
 import com.accenture.nexcharge.simulator.model.entity.ConnectorEntity;
-import com.accenture.nexcharge.simulator.model.enums.ChargePointStatus;
 import com.accenture.nexcharge.simulator.model.enums.ConnectorStatus;
 import com.accenture.nexcharge.simulator.model.enums.SessionStatus;
 import com.accenture.nexcharge.simulator.repository.ChargePointRepository;
@@ -35,16 +34,29 @@ class StatsServiceTest {
     void aggregatesAllMetrics() {
         when(chargePointRepository.count()).thenReturn(5L);
         when(chargePointRepository.countByOnline(true)).thenReturn(4L);
-        when(chargePointRepository.countByStatus(ChargePointStatus.Charging)).thenReturn(2L);
-        when(chargePointRepository.countByStatus(ChargePointStatus.Available)).thenReturn(2L);
-        when(chargePointRepository.countByStatus(ChargePointStatus.Faulted)).thenReturn(1L);
         when(sessionRepository.countByStatus(SessionStatus.Active)).thenReturn(2L);
 
-        ConnectorEntity charging1 = ConnectorEntity.builder()
+        // 5 bornes: A and B charging (1 connector each), C faulted (1 connector),
+        // D and E available (D has 1 connector, E has 2 connectors).
+        ConnectorEntity a1 = ConnectorEntity.builder()
+                .chargePointId("BORNE_A").connectorId(1)
                 .currentPowerKw(7.2).status(ConnectorStatus.Charging).build();
-        ConnectorEntity charging2 = ConnectorEntity.builder()
+        ConnectorEntity b1 = ConnectorEntity.builder()
+                .chargePointId("BORNE_B").connectorId(1)
                 .currentPowerKw(22.0).status(ConnectorStatus.Charging).build();
-        when(connectorRepository.findAll()).thenReturn(List.of(charging1, charging2));
+        ConnectorEntity c1 = ConnectorEntity.builder()
+                .chargePointId("BORNE_C").connectorId(1)
+                .currentPowerKw(0.0).status(ConnectorStatus.Faulted).build();
+        ConnectorEntity d1 = ConnectorEntity.builder()
+                .chargePointId("BORNE_D").connectorId(1)
+                .status(ConnectorStatus.Available).build();
+        ConnectorEntity e1 = ConnectorEntity.builder()
+                .chargePointId("BORNE_E").connectorId(1)
+                .status(ConnectorStatus.Available).build();
+        ConnectorEntity e2 = ConnectorEntity.builder()
+                .chargePointId("BORNE_E").connectorId(2)
+                .status(ConnectorStatus.Available).build();
+        when(connectorRepository.findAll()).thenReturn(List.of(a1, b1, c1, d1, e1, e2));
 
         when(sessionRepository.countSince(any())).thenReturn(8L);
         when(sessionRepository.countSinceWithStatus(any(), org.mockito.ArgumentMatchers.eq(SessionStatus.Completed)))
@@ -78,7 +90,6 @@ class StatsServiceTest {
     void averageNullsWhenNoCompletedSessions() {
         when(chargePointRepository.count()).thenReturn(0L);
         when(chargePointRepository.countByOnline(true)).thenReturn(0L);
-        when(chargePointRepository.countByStatus(any())).thenReturn(0L);
         when(sessionRepository.countByStatus(any())).thenReturn(0L);
         when(connectorRepository.findAll()).thenReturn(List.of());
         when(sessionRepository.countSince(any())).thenReturn(0L);
@@ -89,5 +100,29 @@ class StatsServiceTest {
         StatsDto stats = service.compute();
         assertThat(stats.averageSessionDurationMinutes()).isNull();
         assertThat(stats.averageEnergyPerSessionKwh()).isNull();
+    }
+
+    @Test
+    void faultedConnectorMakesBornFaultedEvenIfOtherConnectorIsCharging() {
+        // Multi-connector borne where one connector charges and another is faulted -> borne is Faulted
+        when(chargePointRepository.count()).thenReturn(1L);
+        when(chargePointRepository.countByOnline(true)).thenReturn(1L);
+        when(sessionRepository.countByStatus(any())).thenReturn(1L);
+        ConnectorEntity ch = ConnectorEntity.builder()
+                .chargePointId("BORNE_X").connectorId(1)
+                .currentPowerKw(7.0).status(ConnectorStatus.Charging).build();
+        ConnectorEntity ft = ConnectorEntity.builder()
+                .chargePointId("BORNE_X").connectorId(2)
+                .status(ConnectorStatus.Faulted).build();
+        when(connectorRepository.findAll()).thenReturn(List.of(ch, ft));
+        when(sessionRepository.countSince(any())).thenReturn(0L);
+        when(sessionRepository.countSinceWithStatus(any(), any())).thenReturn(0L);
+        when(sessionRepository.sumEnergyDeliveredSince(any())).thenReturn(0.0);
+        when(sessionRepository.findByStatus(SessionStatus.Completed)).thenReturn(List.of());
+
+        StatsDto stats = service.compute();
+        assertThat(stats.faultedNow()).isEqualTo(1);
+        assertThat(stats.chargingNow()).isEqualTo(0);
+        assertThat(stats.availableNow()).isEqualTo(0);
     }
 }
