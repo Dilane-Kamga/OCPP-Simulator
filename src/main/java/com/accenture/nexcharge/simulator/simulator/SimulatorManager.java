@@ -5,6 +5,7 @@ import com.accenture.nexcharge.simulator.config.SimulatorProperties;
 import com.accenture.nexcharge.simulator.config.SimulatorProperties.ChargePointConfig;
 import com.accenture.nexcharge.simulator.ocpp.CsmsServer;
 import com.accenture.nexcharge.simulator.ocpp.OcppSessionRegistry;
+import com.accenture.nexcharge.simulator.simulator.SimulatorClientHandler.ConfigurationStore;
 import com.accenture.nexcharge.simulator.simulator.SimulatorClientHandler.InboundCommands;
 import eu.chargetime.ocpp.feature.profile.ClientCoreProfile;
 import eu.chargetime.ocpp.feature.profile.ClientRemoteTriggerProfile;
@@ -97,7 +98,9 @@ public class SimulatorManager {
 
     private void bootOne(ChargePointConfig cfg) {
         String url = String.format("ws://localhost:%d", ocppProperties.server().port());
-        SimulatorClientHandler handler = new SimulatorClientHandler(cfg.id(), inboundCommandsFor(cfg.id()));
+        ChargePointConfigurationStore configStore = new ChargePointConfigurationStore(properties);
+        SimulatorClientHandler handler = new SimulatorClientHandler(
+                cfg.id(), inboundCommandsFor(cfg.id()), configStore);
         ClientCoreProfile core = new ClientCoreProfile(handler);
         ClientRemoteTriggerProfile remoteTrigger = new ClientRemoteTriggerProfile(handler);
         JsonOcppClient client = new JsonOcppClient(cfg.id(), url, core, remoteTrigger);

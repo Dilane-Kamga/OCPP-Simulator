@@ -34,7 +34,7 @@ class MeterServiceTest {
                 .chargePointId("CP1").connectorId(1).transactionId(1001)
                 .measurand("Power.Active.Import").value(7000.0).unit("W")
                 .timestamp(Instant.now()).build();
-        when(meterRepository.findByChargePointIdAndTimestampAfterOrderByTimestampDesc(eq("CP1"), any()))
+        when(meterRepository.findByChargePointIdAndAfter(eq("CP1"), any(), any()))
                 .thenReturn(List.of(entity));
 
         List<MeterValueDto> result = service.findRecent("CP1", null, 60);
@@ -45,15 +45,15 @@ class MeterServiceTest {
     @Test
     void findRecentFiltersByConnector() {
         when(chargePointRepository.existsById("CP1")).thenReturn(true);
-        when(meterRepository.findByChargePointIdAndConnectorIdAndTimestampAfterOrderByTimestampDesc(
-                eq("CP1"), eq(1), any())).thenReturn(List.of());
+        when(meterRepository.findByChargePointIdAndConnectorIdAndAfter(
+                eq("CP1"), eq(1), any(), any())).thenReturn(List.of());
 
         service.findRecent("CP1", 1, 60);
 
         ArgumentCaptor<Instant> after = ArgumentCaptor.forClass(Instant.class);
         org.mockito.Mockito.verify(meterRepository)
-                .findByChargePointIdAndConnectorIdAndTimestampAfterOrderByTimestampDesc(
-                        eq("CP1"), eq(1), after.capture());
+                .findByChargePointIdAndConnectorIdAndAfter(
+                        eq("CP1"), eq(1), after.capture(), any());
         assertThat(after.getValue()).isBefore(Instant.now());
     }
 

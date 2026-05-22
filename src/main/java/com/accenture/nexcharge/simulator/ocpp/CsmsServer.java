@@ -8,6 +8,7 @@ import com.accenture.nexcharge.simulator.service.LiveEventService;
 import eu.chargetime.ocpp.JSONServer;
 import eu.chargetime.ocpp.ServerEvents;
 import eu.chargetime.ocpp.feature.profile.ServerCoreProfile;
+import eu.chargetime.ocpp.model.Confirmation;
 import eu.chargetime.ocpp.model.SessionInformation;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
@@ -16,7 +17,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 @Component
 @RequiredArgsConstructor
@@ -100,5 +103,33 @@ public class CsmsServer {
                     }
                 })
                 .orElse(false);
+    }
+
+    /**
+     * Send an outbound OCPP request to a charge point and synchronously wait up to
+     * {@code timeoutSeconds} for the confirmation.
+     *
+     * @param chargePointId the registered CP identifier
+     * @param request       the OCPP request to send
+     * @param timeoutSeconds max wait time
+     * @return the confirmation wrapped in an Optional, or empty if the CP is offline, the send
+     *         failed, or the timeout elapsed
+     */
+    public Optional<Confirmation> sendAndAwait(String chargePointId,
+                                               eu.chargetime.ocpp.model.Request request,
+                                               long timeoutSeconds) {
+        return sessionRegistry.findSessionId(chargePointId)
+                .flatMap(sessionId -> {
+                    try {
+                        Confirmation confirmation = server.send(sessionId, request)
+                                .toCompletableFuture()
+                                .get(timeoutSeconds, TimeUnit.SECONDS);
+                        return Optional.ofNullable(confirmation);
+                    } catch (Exception e) {
+                        log.warn("Failed to send/await {} for {}: {}",
+                                request.getClass().getSimpleName(), chargePointId, e.getMessage());
+                        return Optional.empty();
+                    }
+                });
     }
 }

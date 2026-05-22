@@ -68,12 +68,42 @@ public class SimulatorClientHandler implements ClientCoreEventHandler, ClientRem
         void onTriggerBootNotification();
     }
 
+    /**
+     * Callback interface that gives the handler read/write access to the charge point's
+     * in-memory configuration map.  Keeps the handler decoupled from
+     * {@link ChargePointSimulator}.
+     */
+    public interface ConfigurationStore {
+        /**
+         * Attempt to set a configuration key to a new value.
+         *
+         * @param key   the configuration key
+         * @param value the new value string
+         * @return {@code true} when the key is known and was updated;
+         *         {@code false} when the key is unknown (→ CP replies Rejected)
+         */
+        boolean set(String key, String value);
+
+        /**
+         * Return all known keys, or only the requested subset when {@code requestedKeys}
+         * is non-null and non-empty.
+         *
+         * @param requestedKeys keys to filter by, or {@code null}/empty for all
+         * @return list of matching entries
+         */
+        java.util.List<eu.chargetime.ocpp.model.core.KeyValueType> get(
+                java.util.List<String> requestedKeys);
+    }
+
     private final String chargePointId;
     private final InboundCommands commands;
+    private final ConfigurationStore configStore;
 
-    public SimulatorClientHandler(String chargePointId, InboundCommands commands) {
+    public SimulatorClientHandler(String chargePointId, InboundCommands commands,
+                                  ConfigurationStore configStore) {
         this.chargePointId = chargePointId;
         this.commands = commands;
+        this.configStore = configStore;
     }
 
     @Override
@@ -83,12 +113,50 @@ public class SimulatorClientHandler implements ClientCoreEventHandler, ClientRem
 
     @Override
     public GetConfigurationConfirmation handleGetConfigurationRequest(GetConfigurationRequest request) {
-        return new GetConfigurationConfirmation();
+        String[] requestedKeys = request.getKey();
+        java.util.List<String> filter = (requestedKeys == null || requestedKeys.length == 0)
+                ? null
+                : java.util.Arrays.asList(requestedKeys);
+
+        java.util.List<eu.chargetime.ocpp.model.core.KeyValueType> known = configStore.get(filter);
+
+        GetConfigurationConfirmation confirmation = new GetConfigurationConfirmation();
+        confirmation.setConfigurationKey(
+                known.toArray(new eu.chargetime.ocpp.model.core.KeyValueType[0]));
+
+        if (filter != null) {
+            // Collect keys that were requested but not found in the store
+            java.util.Set<String> knownKeyNames = known.stream()
+                    .map(eu.chargetime.ocpp.model.core.KeyValueType::getKey)
+                    .collect(java.util.stream.Collectors.toSet());
+            java.util.List<String> unknown = filter.stream()
+                    .filter(k -> !knownKeyNames.contains(k))
+                    .toList();
+            if (!unknown.isEmpty()) {
+                confirmation.setUnknownKey(unknown.toArray(String[]::new));
+            }
+        }
+
+        log.info("[{}] GetConfiguration: {} known, {} unknown",
+                chargePointId, known.size(),
+                confirmation.getUnknownKey() == null ? 0 : confirmation.getUnknownKey().length);
+        return confirmation;
     }
 
     @Override
     public ChangeConfigurationConfirmation handleChangeConfigurationRequest(ChangeConfigurationRequest request) {
-        return new ChangeConfigurationConfirmation(ConfigurationStatus.Accepted);
+        String key = request.getKey();
+        String value = request.getValue();
+        log.info("[{}] ChangeConfiguration key={} value={}", chargePointId, key, value);
+
+        if (key == null || value == null) {
+            return new ChangeConfigurationConfirmation(ConfigurationStatus.Rejected);
+        }
+
+        boolean applied = configStore.set(key, value);
+        ConfigurationStatus status = applied ? ConfigurationStatus.Accepted : ConfigurationStatus.Rejected;
+        log.info("[{}] ChangeConfiguration key={} → {}", chargePointId, key, status);
+        return new ChangeConfigurationConfirmation(status);
     }
 
     @Override

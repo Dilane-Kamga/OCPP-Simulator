@@ -91,6 +91,14 @@ simulator:
     - RFID-0019
     - RFID-0020
 
+springdoc:
+  swagger-ui:
+    path: /api/docs
+    operations-sorter: method
+    tags-sorter: alpha
+  api-docs:
+    path: /v3/api-docs
+
 logging:
   level:
     root: INFO

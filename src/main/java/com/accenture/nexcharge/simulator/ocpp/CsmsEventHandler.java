@@ -14,6 +14,7 @@ import com.accenture.nexcharge.simulator.repository.ChargePointRepository;
 import com.accenture.nexcharge.simulator.repository.ChargingSessionRepository;
 import com.accenture.nexcharge.simulator.repository.ConnectorRepository;
 import com.accenture.nexcharge.simulator.repository.MeterReadingRepository;
+import com.accenture.nexcharge.simulator.service.AuthorizationService;
 import com.accenture.nexcharge.simulator.service.LiveEventService;
 import com.accenture.nexcharge.simulator.service.LogService;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -70,6 +71,7 @@ public class CsmsEventHandler implements ServerCoreEventHandler {
     private final LiveEventService liveEventService;
     private final OcppSessionRegistry registry;
     private final SimulatorProperties properties;
+    private final AuthorizationService authorizationService;
 
     private final AtomicInteger transactionCounter = new AtomicInteger(TRANSACTION_ID_START);
     private final ObjectMapper objectMapper = new ObjectMapper().findAndRegisterModules();
@@ -127,8 +129,13 @@ public class CsmsEventHandler implements ServerCoreEventHandler {
         String chargePointId = registry.findChargePointId(sessionIndex).orElse("UNKNOWN");
         logIncoming(chargePointId, "Authorize", request);
 
-        IdTagInfo info = new IdTagInfo(AuthorizationStatus.Accepted);
-        info.setExpiryDate(ZonedDateTime.now().plusYears(1));
+        AuthorizationStatus status = authorizationService.authorize(request.getIdTag(), Instant.now());
+        log.info("[CSMS] Authorize idTag={} -> {}", request.getIdTag(), status);
+
+        IdTagInfo info = new IdTagInfo(status);
+        if (status == AuthorizationStatus.Accepted) {
+            info.setExpiryDate(ZonedDateTime.now().plusYears(1));
+        }
         return new AuthorizeConfirmation(info);
     }
 

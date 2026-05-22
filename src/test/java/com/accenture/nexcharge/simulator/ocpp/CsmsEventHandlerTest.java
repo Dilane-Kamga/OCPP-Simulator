@@ -9,6 +9,7 @@ import com.accenture.nexcharge.simulator.repository.ChargePointRepository;
 import com.accenture.nexcharge.simulator.repository.ChargingSessionRepository;
 import com.accenture.nexcharge.simulator.repository.ConnectorRepository;
 import com.accenture.nexcharge.simulator.repository.MeterReadingRepository;
+import com.accenture.nexcharge.simulator.service.AuthorizationService;
 import com.accenture.nexcharge.simulator.service.LiveEventService;
 import com.accenture.nexcharge.simulator.service.LogService;
 import eu.chargetime.ocpp.model.core.*;
@@ -26,6 +27,7 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -39,6 +41,7 @@ class CsmsEventHandlerTest {
     @Mock LogService logService;
     @Mock LiveEventService liveEventService;
     @Mock OcppSessionRegistry registry;
+    @Mock AuthorizationService authorizationService;
 
     SimulatorProperties properties;
     CsmsEventHandler handler;
@@ -48,7 +51,8 @@ class CsmsEventHandlerTest {
         properties = new SimulatorProperties(true, 15, 30, 10, 0.05, 0.02, List.of(), List.of("RFID-001"));
         handler = new CsmsEventHandler(
                 chargePointRepository, connectorRepository, sessionRepository,
-                meterRepository, logService, liveEventService, registry, properties);
+                meterRepository, logService, liveEventService, registry, properties,
+                authorizationService);
     }
 
     @Test
@@ -83,8 +87,10 @@ class CsmsEventHandlerTest {
     }
 
     @Test
-    void authorizeAlwaysAccepts() {
+    void authorizeSeededTagAccepted() {
         UUID sessionId = UUID.randomUUID();
+        when(registry.findChargePointId(sessionId)).thenReturn(Optional.of("BORNE_A"));
+        when(authorizationService.authorize(eq("RFID-001"), any())).thenReturn(AuthorizationStatus.Accepted);
         AuthorizeRequest req = new AuthorizeRequest("RFID-001");
 
         AuthorizeConfirmation conf = handler.handleAuthorizeRequest(sessionId, req);

@@ -17,6 +17,8 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -33,7 +35,8 @@ class SessionServiceTest {
                 .startTime(Instant.parse("2026-05-22T10:00:00Z"))
                 .meterStartWh(0.0)
                 .status(SessionStatus.Active).build();
-        when(repository.search(SessionStatus.Active, null, null, null))
+        when(repository.search(eq(SessionStatus.Active), eq(null), eq(null), eq(null),
+                any(org.springframework.data.domain.Pageable.class)))
                 .thenReturn(List.of(entity));
 
         List<SessionDto> result = service.search(SessionStatus.Active, null, null, null);

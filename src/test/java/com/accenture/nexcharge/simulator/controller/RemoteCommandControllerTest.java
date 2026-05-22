@@ -1,5 +1,6 @@
 package com.accenture.nexcharge.simulator.controller;
 
+import com.accenture.nexcharge.simulator.service.ConfigurationService;
 import com.accenture.nexcharge.simulator.simulator.ChargePointSimulator;
 import com.accenture.nexcharge.simulator.simulator.SimulatorManager;
 import com.accenture.nexcharge.simulator.simulator.SimulatorState;
@@ -27,6 +28,7 @@ class RemoteCommandControllerTest {
     @Autowired ObjectMapper json;
     @MockBean SimulatorManager manager;
     @MockBean ChargePointSimulator simulator;
+    @MockBean ConfigurationService configurationService;
 
     @Test
     void remoteStartReturnsAccepted() throws Exception {

@@ -17,7 +17,10 @@ class SimulatorClientHandlerTest {
 
     private final SimulatorClientHandler.InboundCommands commands =
             mock(SimulatorClientHandler.InboundCommands.class);
-    private final SimulatorClientHandler handler = new SimulatorClientHandler("BORNE_A", commands);
+    private final SimulatorClientHandler.ConfigurationStore configStore =
+            mock(SimulatorClientHandler.ConfigurationStore.class);
+    private final SimulatorClientHandler handler =
+            new SimulatorClientHandler("BORNE_A", commands, configStore);
 
     @Test
     void triggerHeartbeatRoutesToInbound() {
