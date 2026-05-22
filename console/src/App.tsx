@@ -1,7 +1,16 @@
+import { Header } from './components/Header';
+import { SiteColumn } from './components/SiteColumn';
+import { WSClient } from './ws/WSClient';
+
 export default function App() {
   return (
-    <div className="min-h-screen flex items-center justify-center">
-      <h1 className="text-2xl font-bold">NEXCharge Operator Console — bootstrap</h1>
+    <div className="min-h-screen flex flex-col">
+      <WSClient />
+      <Header />
+      <main className="flex-1 flex flex-col md:flex-row">
+        <SiteColumn site="NEX_TOWER" />
+        <SiteColumn site="NEXTERACOM" />
+      </main>
     </div>
   );
 }
