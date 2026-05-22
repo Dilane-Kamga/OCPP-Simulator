@@ -51,10 +51,18 @@ class OcppLogRepositoryTest {
     void searchWithNoFilters() {
         Instant now = Instant.now();
         repository.save(OcppLogEntity.builder()
-                .chargePointId("CP1").direction(LogDirection.IN).action("Boot")
+                .chargePointId("CP1").direction(LogDirection.IN).action("BootNotification")
                 .payload("{}").timestamp(now).build());
+        repository.save(OcppLogEntity.builder()
+                .chargePointId("CP2").direction(LogDirection.OUT).action("RemoteStart")
+                .payload("{}").timestamp(now.minus(1, ChronoUnit.MINUTES)).build());
+        repository.save(OcppLogEntity.builder()
+                .chargePointId("CP3").direction(LogDirection.IN).action("Heartbeat")
+                .payload("{}").timestamp(now.minus(2, ChronoUnit.MINUTES)).build());
 
         List<OcppLogEntity> result = repository.search(null, null, null, null, PageRequest.of(0, 100));
-        assertThat(result).hasSize(1);
+        assertThat(result).hasSize(3);
+        assertThat(result).extracting(OcppLogEntity::getChargePointId)
+                .containsExactlyInAnyOrder("CP1", "CP2", "CP3");
     }
 }

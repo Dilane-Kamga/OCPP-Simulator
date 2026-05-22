@@ -35,7 +35,6 @@ public class OcppLogEntity {
     @Column(length = 50)
     private String action;
 
-    @Lob
     @Column(columnDefinition = "TEXT")
     private String payload;
 
