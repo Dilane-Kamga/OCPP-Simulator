@@ -1,0 +1,25 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:test;DB_CLOSE_DELAY=-1;NON_KEYWORDS=VALUE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+
+simulator:
+  enabled: false
+  acceleration-factor: 15
+  heartbeat-interval-seconds: 30
+  meter-interval-seconds: 10
+  auto-session-probability: 0.0
+  random-event-probability: 0.0
+  charge-points: []
+  rfid-tags: [RFID-TEST]
+
+ocpp:
+  server:
+    port: 0
+    host: 127.0.0.1

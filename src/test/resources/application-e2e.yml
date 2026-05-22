@@ -1,0 +1,33 @@
+server:
+  port: 0
+spring:
+  datasource:
+    url: jdbc:h2:mem:e2e;DB_CLOSE_DELAY=-1
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+
+ocpp:
+  server:
+    port: 9101
+    host: 127.0.0.1
+
+simulator:
+  enabled: true
+  acceleration-factor: 60
+  heartbeat-interval-seconds: 2
+  meter-interval-seconds: 1
+  auto-session-probability: 0.0
+  random-event-probability: 0.0
+  charge-points:
+    - id: BORNE_E2E
+      vendor: Legrand
+      model: Test
+      serial: E2E-001
+      max-power-kw: 7.4
+      connectors: 1
+      firmware: "1.0.0"
+  rfid-tags: [RFID-E2E]

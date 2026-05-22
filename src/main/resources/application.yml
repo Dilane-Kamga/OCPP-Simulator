@@ -1,0 +1,107 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: nexcharge-simulator
+  datasource:
+    url: jdbc:h2:file:./data/csms;AUTO_SERVER=TRUE;NON_KEYWORDS=VALUE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate.format_sql: false
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+
+ocpp:
+  server:
+    # 9000 is taken by ZSATunnel (Zscaler) on Accenture-managed laptops; 9100 dodges that.
+    port: 9100
+    host: 0.0.0.0
+
+simulator:
+  enabled: true
+  acceleration-factor: 15
+  heartbeat-interval-seconds: 30
+  meter-interval-seconds: 10
+  auto-session-probability: 0.05
+  random-event-probability: 0.02
+  charge-points:
+    - id: BORNE_A
+      vendor: Legrand
+      model: "Green'Up Premium"
+      serial: LGR-2024-001
+      max-power-kw: 7.4
+      connectors: 1
+      firmware: "1.4.2"
+    - id: BORNE_B
+      vendor: Legrand
+      model: "Green'Up Premium"
+      serial: LGR-2024-002
+      max-power-kw: 7.4
+      connectors: 1
+      firmware: "1.4.2"
+    - id: BORNE_C
+      vendor: Legrand
+      model: "Green'Up Control"
+      serial: LGR-2024-003
+      max-power-kw: 22.0
+      connectors: 2
+      firmware: "2.1.0"
+    - id: BORNE_D
+      vendor: Legrand
+      model: "Green'Up Premium"
+      serial: LGR-2024-004
+      max-power-kw: 7.4
+      connectors: 1
+      firmware: "1.4.2"
+    - id: BORNE_E
+      vendor: Legrand
+      model: "Green'Up Control"
+      serial: LGR-2024-005
+      max-power-kw: 22.0
+      connectors: 2
+      firmware: "2.1.0"
+  rfid-tags:
+    - RFID-0001
+    - RFID-0002
+    - RFID-0003
+    - RFID-0004
+    - RFID-0005
+    - RFID-0006
+    - RFID-0007
+    - RFID-0008
+    - RFID-0009
+    - RFID-0010
+    - RFID-0011
+    - RFID-0012
+    - RFID-0013
+    - RFID-0014
+    - RFID-0015
+    - RFID-0016
+    - RFID-0017
+    - RFID-0018
+    - RFID-0019
+    - RFID-0020
+
+springdoc:
+  swagger-ui:
+    path: /api/docs
+    operations-sorter: method
+    tags-sorter: alpha
+  api-docs:
+    path: /v3/api-docs
+
+logging:
+  level:
+    root: INFO
+    com.accenture.nexcharge: INFO
+    eu.chargetime.ocpp: WARN
+    org.hibernate.SQL: WARN
