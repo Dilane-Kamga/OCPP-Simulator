@@ -53,4 +53,11 @@ class SessionControllerTest {
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.error").value("Session not found: 99"));
     }
+
+    @Test
+    void searchWithInvalidStatusReturns400() throws Exception {
+        mvc.perform(get("/api/sessions").param("status", "GARBAGE"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("Invalid status: GARBAGE"));
+    }
 }

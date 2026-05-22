@@ -37,7 +37,7 @@ public class SessionController {
         return service.getById(id);
     }
 
-    private SessionStatus parseStatus(String status) {
+    private static SessionStatus parseStatus(String status) {
         if (status == null || status.isBlank() || "all".equalsIgnoreCase(status)) return null;
         try {
             return SessionStatus.valueOf(status);
