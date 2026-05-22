@@ -45,8 +45,8 @@ class SimulatorScenarioServiceTest {
     @Test
     void startAllStartsAvailableOnes() {
         service.run(new ScenarioRequest("START_ALL", null));
-        verify(s1).startSession(eq(1), anyString());
-        verify(s2).startSession(eq(1), anyString());
+        verify(manager).triggerSessionStart(eq(s1), eq(1), anyString());
+        verify(manager).triggerSessionStart(eq(s2), eq(1), anyString());
     }
 
     @Test
@@ -85,7 +85,7 @@ class SimulatorScenarioServiceTest {
         when(s1.getState()).thenReturn(SimulatorState.AVAILABLE);
         when(s2.getState()).thenReturn(SimulatorState.FAULTED);
         service.run(new ScenarioRequest("PEAK_LOAD", null));
-        verify(s1).startSession(eq(1), anyString());
+        verify(manager).triggerSessionStart(eq(s1), eq(1), anyString());
         verify(s2).recoverFromFault();
     }
 

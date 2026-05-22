@@ -290,6 +290,19 @@ public class SimulatorManager {
         return simulators.get(id);
     }
 
+    /**
+     * Start a session on the given simulator and schedule the PREPARING→CHARGING progression.
+     * Used by manually-triggered paths (scenario API, RemoteStart) so they reach CHARGING
+     * without waiting for the next {@link #worldTick()}.
+     */
+    public void triggerSessionStart(ChargePointSimulator s, int connectorId, String idTag) {
+        if (s.getState() != SimulatorState.AVAILABLE) {
+            return;
+        }
+        s.startSession(connectorId, idTag);
+        finishPreparing(s);
+    }
+
     @PreDestroy
     public void stop() {
         if (scheduler != null) {

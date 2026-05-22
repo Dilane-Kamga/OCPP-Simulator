@@ -61,7 +61,7 @@ public class SimulatorScenarioService {
     private void startAll() {
         for (ChargePointSimulator s : manager.getAll()) {
             if (s.getState() == SimulatorState.AVAILABLE) {
-                s.startSession(DEFAULT_CONNECTOR_ID, pickRfid());
+                manager.triggerSessionStart(s, DEFAULT_CONNECTOR_ID, pickRfid());
             }
         }
     }
@@ -95,7 +95,7 @@ public class SimulatorScenarioService {
     private void peakLoad() {
         for (ChargePointSimulator s : manager.getAll()) {
             switch (s.getState()) {
-                case AVAILABLE -> s.startSession(DEFAULT_CONNECTOR_ID, pickRfid());
+                case AVAILABLE -> manager.triggerSessionStart(s, DEFAULT_CONNECTOR_ID, pickRfid());
                 case FAULTED -> s.recoverFromFault();
                 default -> { /* leave CHARGING and PREPARING as is */ }
             }
