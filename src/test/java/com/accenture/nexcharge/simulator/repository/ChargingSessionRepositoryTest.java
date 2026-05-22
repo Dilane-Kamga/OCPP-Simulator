@@ -123,7 +123,7 @@ class ChargingSessionRepositoryTest {
 
     @Test
     void searchRespectsDateRangeBoundary() {
-        Instant now = Instant.now();
+        Instant now = Instant.now().truncatedTo(ChronoUnit.MILLIS);
         Instant from = now.minus(1, ChronoUnit.HOURS);
         Instant to = now;
         // before range
