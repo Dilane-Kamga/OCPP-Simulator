@@ -522,11 +522,33 @@ describe('consoleStore', () => {
       useConsoleStore.getState().applyEvent(makeEvent({
         type: 'METER_UPDATE',
         connectorId: 1,
-        data: { powerKw: 7.0 },
+        // Backend wire shape: { readings: { measurand: rawValue, ... }, transactionId }.
+        // Power.Active.Import is in watts (W), Voltage in V, Current.Import in A.
+        data: { readings: { 'Power.Active.Import': 7000 } },
         timestamp: new Date(Date.UTC(2026, 4, 23, 10, 0, i)).toISOString(),
       }));
     }
     expect(useConsoleStore.getState().powerHistory['BORNE_A'].length).toBe(60);
+    expect(useConsoleStore.getState().powerHistory['BORNE_A'][0].kw).toBeCloseTo(7.0);
+  });
+
+  it('applyEvent METER_UPDATE updates the connector currentPowerKw/Amps/Voltage from readings', () => {
+    useConsoleStore.getState().hydrate([sampleCp]);
+    useConsoleStore.getState().applyEvent(makeEvent({
+      type: 'METER_UPDATE',
+      connectorId: 1,
+      data: {
+        readings: {
+          'Power.Active.Import': 7200,
+          'Current.Import': 31.3,
+          'Voltage': 230.2,
+        },
+      },
+    }));
+    const conn1 = useConsoleStore.getState().chargePoints['BORNE_A'].connectors.find(c => c.connectorId === 1)!;
+    expect(conn1.currentPowerKw).toBeCloseTo(7.2);
+    expect(conn1.currentAmps).toBeCloseTo(31.3);
+    expect(conn1.voltage).toBeCloseTo(230.2);
   });
 
   it('applyEvent FAULT sets errorCode', () => {
@@ -687,7 +709,15 @@ export const useConsoleStore = create<State & Actions>((set, get) => ({
       }
 
       case 'METER_UPDATE': {
-        const kw = typeof data.powerKw === 'number' ? data.powerKw : 0;
+        // Backend payload (CsmsEventHandler#handleMeterValuesRequest):
+        //   data.readings: { 'Power.Active.Import': watts, 'Current.Import': amps,
+        //                    'Voltage': v, 'Energy.Active.Import.Register': wh, 'Temperature': c }
+        //   data.transactionId
+        const readings = (data.readings ?? {}) as Record<string, number>;
+        const watts = readings['Power.Active.Import'];
+        const kw = typeof watts === 'number' ? watts / 1000 : 0;
+        const amps = readings['Current.Import'];
+        const volts = readings['Voltage'];
         const t = Date.parse(event.timestamp);
         if (event.connectorId != null) {
           set((s) => ({
@@ -697,18 +727,25 @@ export const useConsoleStore = create<State & Actions>((set, get) => ({
                 ...cp,
                 connectors: cp.connectors.map((c) =>
                   c.connectorId === event.connectorId
-                    ? { ...c, currentPowerKw: kw, currentAmps: data.amps ?? c.currentAmps, voltage: data.voltage ?? c.voltage }
+                    ? {
+                        ...c,
+                        currentPowerKw: typeof watts === 'number' ? kw : c.currentPowerKw,
+                        currentAmps: typeof amps === 'number' ? amps : c.currentAmps,
+                        voltage: typeof volts === 'number' ? volts : c.voltage,
+                      }
                     : c
                 ),
               },
             },
           }));
         }
-        set((s) => {
-          const prev = s.powerHistory[chargePointId] ?? [];
-          const next = [...prev, { t, kw }].slice(-MAX_POWER_POINTS);
-          return { powerHistory: { ...s.powerHistory, [chargePointId]: next } };
-        });
+        if (typeof watts === 'number') {
+          set((s) => {
+            const prev = s.powerHistory[chargePointId] ?? [];
+            const next = [...prev, { t, kw }].slice(-MAX_POWER_POINTS);
+            return { powerHistory: { ...s.powerHistory, [chargePointId]: next } };
+          });
+        }
         break;
       }
 
@@ -768,13 +805,13 @@ Run from `console/`:
 ```bash
 npm test
 ```
-Expected: `7 passed`.
+Expected: `8 passed`.
 
 - [ ] **Step 6: Commit**
 
 ```bash
 git add console/src/test-setup.ts console/src/store/consoleStore.ts console/src/store/__tests__/consoleStore.test.ts
-git commit -m "feat(console): add Zustand store with 7 unit tests (TDD)"
+git commit -m "feat(console): add Zustand store with 8 unit tests (TDD)"
 ```
 
 ---
@@ -1393,7 +1430,11 @@ function formatLine(e: LiveEvent): { arrow: string; arrowClass: string; action: 
   let detail = '';
   const data = e.data as Record<string, any>;
   if (e.type === 'STATUS_CHANGE') detail = `${data.status ?? ''} c=${e.connectorId ?? '-'}`;
-  else if (e.type === 'METER_UPDATE') detail = `${(data.powerKw ?? 0).toFixed(2)} kW c=${e.connectorId ?? '-'}`;
+  else if (e.type === 'METER_UPDATE') {
+    const watts = (data.readings as Record<string, number> | undefined)?.['Power.Active.Import'];
+    const kw = typeof watts === 'number' ? watts / 1000 : 0;
+    detail = `${kw.toFixed(2)} kW c=${e.connectorId ?? '-'}`;
+  }
   else if (e.type === 'FAULT') detail = data.errorCode ?? 'Faulted';
   else if (e.type === 'SESSION_STARTED') detail = `tx=${data.transactionId ?? '?'} ${data.idTag ?? ''}`;
   else if (e.type === 'SESSION_STOPPED') detail = `tx=${data.transactionId ?? '?'}`;
