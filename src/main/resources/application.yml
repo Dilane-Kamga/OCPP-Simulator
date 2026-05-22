@@ -22,7 +22,8 @@ spring:
 
 ocpp:
   server:
-    port: 9000
+    # 9000 is taken by ZSATunnel (Zscaler) on Accenture-managed laptops; 9100 dodges that.
+    port: 9100
     host: 0.0.0.0
 
 simulator:
