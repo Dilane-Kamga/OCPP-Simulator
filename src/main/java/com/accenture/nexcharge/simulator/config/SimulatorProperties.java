@@ -17,6 +17,7 @@ public record SimulatorProperties(
 ) {
     public record ChargePointConfig(
             String id,
+            String site,
             String vendor,
             String model,
             String serial,

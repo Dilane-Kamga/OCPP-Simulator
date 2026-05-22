@@ -32,7 +32,7 @@ class ChargePointSimulatorStateMachineTest {
         when(client.isConnected()).thenReturn(true);
         when(client.send(any())).thenReturn(CompletableFuture.completedFuture(null));
 
-        config = new ChargePointConfig("BORNE_TEST", "Legrand", "Green'Up Premium",
+        config = new ChargePointConfig("BORNE_TEST", null, "Legrand", "Green'Up Premium",
                 "LGR-TEST", 7.4, 1, "1.4.2");
         props = new SimulatorProperties(true, 15, 30, 10, 0.0, 0.0,
                 List.of(config), List.of("RFID-TEST"));

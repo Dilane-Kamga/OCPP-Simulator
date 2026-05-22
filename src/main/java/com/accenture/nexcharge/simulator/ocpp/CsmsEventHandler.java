@@ -98,6 +98,10 @@ public class CsmsEventHandler implements ServerCoreEventHandler {
         entity.setOnline(true);
         entity.setLastHeartbeat(Instant.now());
         entity.setErrorCode("NoError");
+        properties.chargePoints().stream()
+                .filter(cp -> chargePointId.equals(cp.id()))
+                .findFirst()
+                .ifPresent(cp -> entity.setSite(cp.site()));
         chargePointRepository.save(entity);
 
         liveEventService.publish(LiveEventDto.of(LiveEventType.CHARGE_POINT_CONNECTED, chargePointId,
