@@ -5,7 +5,7 @@ spring:
   application:
     name: nexcharge-simulator
   datasource:
-    url: jdbc:h2:file:./data/csms;AUTO_SERVER=TRUE
+    url: jdbc:h2:file:./data/csms;AUTO_SERVER=TRUE;NON_KEYWORDS=VALUE
     driver-class-name: org.h2.Driver
     username: sa
     password:
