@@ -14,7 +14,7 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
-@Transactional
+@Transactional(readOnly = true)
 public class MeterService {
 
     private static final int DEFAULT_LOOKBACK_MINUTES = 60;
@@ -38,10 +38,12 @@ public class MeterService {
         return entities.stream().map(this::toDto).toList();
     }
 
+    @Transactional
     public void save(MeterReadingEntity entity) {
         meterRepository.save(entity);
     }
 
+    @Transactional
     public void saveAll(List<MeterReadingEntity> entities) {
         meterRepository.saveAll(entities);
     }

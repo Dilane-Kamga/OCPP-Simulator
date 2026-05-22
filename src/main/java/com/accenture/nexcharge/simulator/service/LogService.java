@@ -15,7 +15,7 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
-@Transactional
+@Transactional(readOnly = true)
 public class LogService {
 
     private static final int DEFAULT_LIMIT = 100;
@@ -23,6 +23,7 @@ public class LogService {
 
     private final OcppLogRepository repository;
 
+    @Transactional
     public void log(String chargePointId, LogDirection direction, String action, String payload) {
         repository.save(OcppLogEntity.builder()
                 .chargePointId(chargePointId)
