@@ -742,3 +742,31 @@ Ce projet est un **simulateur OCPP 1.6J autonome et complet** :
 - Les scénarios permettent de tester tous les cas d'usage
 
 L'app de monitoring qu'on va développer consommera cette API exactement comme elle consommerait un vrai CSMS connecté à de vraies bornes Legrand.
+
+## Operator Console
+
+Browser-based demo console. Source in `console/`, builds to `src/main/resources/static/console/`, served by Spring at `http://localhost:8080/console/`.
+
+**Dev (hot-reload):**
+```bash
+cd console
+npm install         # first time only
+npm run dev         # http://localhost:5173/console/
+```
+Vite proxies `/api` and `/ws/live` to `localhost:8080`, so the Spring backend must be running.
+
+**Demo (single command):**
+```bash
+cd console && npm run build && cd ..
+./mvnw spring-boot:run
+```
+Open `http://localhost:8080/console/`.
+
+**Tests (Vitest, store only):**
+```bash
+cd console
+npm test
+```
+
+**Spec:** `docs/superpowers/specs/2026-05-23-operator-console-design.md`
+**Plan:** `docs/superpowers/plans/2026-05-23-operator-console.md`

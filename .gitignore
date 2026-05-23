@@ -4,5 +4,8 @@ data/
 .idea/
 .vscode/
 .claude/
+.superpowers/
 *.iml
 .DS_Store
+src/main/resources/static/console/
+console/dist/

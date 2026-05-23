@@ -25,7 +25,7 @@ public class RemoteCommandController {
     @PostMapping("/remote-start")
     public CommandResponse remoteStart(@PathVariable String id, @Valid @RequestBody RemoteStartRequest req) {
         ChargePointSimulator s = require(id);
-        s.startSession(req.connectorId(), req.idTag());
+        manager.triggerSessionStart(s, req.connectorId(), req.idTag());
         return CommandResponse.accepted("RemoteStart sent to " + id);
     }
 
@@ -36,7 +36,11 @@ public class RemoteCommandController {
         if (s.getState() != SimulatorState.CHARGING) {
             return CommandResponse.rejected("Charge point not charging");
         }
-        s.stopSession("Remote");
+        if (req.transactionId() != null) {
+            s.stopSessionByTransactionId(req.transactionId(), "Remote");
+        } else {
+            s.stopSession("Remote");
+        }
         return CommandResponse.accepted("RemoteStop sent to " + id);
     }
 

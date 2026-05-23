@@ -27,13 +27,21 @@ public class ChargingProfile {
     }
 
     public PowerSnapshot tick(Duration realElapsed) {
+        return tick(realElapsed, maxPowerKw);
+    }
+
+    /**
+     * Tick with a power cap (used for load balancing across connectors sharing a borne).
+     * The connector's natural power curve is clamped to {@code powerCapKw}.
+     */
+    public PowerSnapshot tick(Duration realElapsed, double powerCapKw) {
         double simulatedSeconds = realElapsed.toMillis() / 1000.0 * accelerationFactor;
         double simulatedMinutes = simulatedSeconds / 60.0;
 
         double socIncrement = (simulatedMinutes / SIMULATED_FULL_CHARGE_MINUTES) * 100.0;
         socPercent = Math.min(100.0, socPercent + socIncrement);
 
-        double basePowerKw = computePowerForSoc(socPercent);
+        double basePowerKw = Math.min(computePowerForSoc(socPercent), powerCapKw);
         double noisyPowerKw = applyGaussianNoise(basePowerKw);
         noisyPowerKw = Math.max(0.0, noisyPowerKw);
 

@@ -41,7 +41,7 @@ class RemoteCommandControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("Accepted"));
 
-        verify(simulator).startSession(1, "RFID-0042");
+        verify(manager).triggerSessionStart(simulator, 1, "RFID-0042");
     }
 
     @Test

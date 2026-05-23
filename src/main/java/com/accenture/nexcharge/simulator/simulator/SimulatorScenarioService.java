@@ -46,11 +46,12 @@ public class SimulatorScenarioService {
 
     public void run(ScenarioRequest request) {
         String scenario = request.scenario();
-        log.info("[SCENARIO] {} target={}", scenario, request.chargePointId());
+        log.info("[SCENARIO] {} target={} connector={}", scenario, request.chargePointId(), request.connectorId());
         switch (scenario) {
             case "START_ALL" -> startAll();
+            case "START_ONE" -> startOne(request.chargePointId(), request.connectorId());
             case "STOP_ALL" -> stopAll();
-            case "FAULT_ONE" -> faultOne(request.chargePointId());
+            case "FAULT_ONE" -> faultOne(request.chargePointId(), request.connectorId());
             case "DISCONNECT_ONE" -> disconnectOne(request.chargePointId());
             case "PEAK_LOAD" -> peakLoad();
             case "RESET_ALL" -> resetAll();
@@ -74,14 +75,26 @@ public class SimulatorScenarioService {
         }
     }
 
-    private void faultOne(String chargePointId) {
+    private void faultOne(String chargePointId, Integer connectorId) {
         ChargePointSimulator s = (chargePointId != null)
                 ? manager.get(chargePointId)
                 : manager.getAll().stream()
                     .filter(x -> x.getState() != SimulatorState.FAULTED)
                     .findFirst().orElse(null);
-        if (s != null) {
+        if (s == null) return;
+        if (connectorId != null) {
+            s.fault(connectorId, DEFAULT_FAULT_ERROR_CODE);
+        } else {
             s.fault(DEFAULT_FAULT_ERROR_CODE);
+        }
+    }
+
+    private void startOne(String chargePointId, Integer connectorId) {
+        if (chargePointId == null || connectorId == null) return;
+        ChargePointSimulator s = manager.get(chargePointId);
+        if (s == null) return;
+        if (s.isConnectorAvailable(connectorId)) {
+            manager.triggerSessionStart(s, connectorId, pickRfid());
         }
     }
 

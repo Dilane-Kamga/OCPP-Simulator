@@ -32,7 +32,7 @@ class SimulatorScenarioServiceTest {
     @BeforeEach
     void setUp() {
         ChargePointConfig cfg = new ChargePointConfig(
-                "BORNE_TEST", "Legrand", "Green'Up Premium", "LGR-TEST", 7.4, 1, "1.4.2");
+                "BORNE_TEST", null, "Legrand", "Green'Up Premium", "LGR-TEST", 7.4, 1, "1.4.2");
         properties = new SimulatorProperties(true, 15, 30, 10, 0.0, 0.0,
                 List.of(cfg), List.of("RFID-0001", "RFID-0002"));
         service = new SimulatorScenarioService(manager, properties);

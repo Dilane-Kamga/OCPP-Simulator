@@ -29,7 +29,7 @@ class ChargePointControllerTest {
 
     @Test
     void getAllReturnsList() throws Exception {
-        ChargePointDto cp = new ChargePointDto("BORNE_A", "Legrand", "Green'Up Premium",
+        ChargePointDto cp = new ChargePointDto("BORNE_A", "NEX_TOWER", "Legrand", "Green'Up Premium",
                 "LGR-001", "1.4.2", ChargePointStatus.Available, true,
                 Instant.now(), Instant.now(), "NoError",
                 List.of(new ConnectorDto(1, ConnectorStatus.Available, 0.0, 0.0, 230.0, 22.0, 0.0, "NoError", false, null, null)));

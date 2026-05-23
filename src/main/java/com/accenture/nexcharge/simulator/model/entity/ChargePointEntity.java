@@ -19,6 +19,9 @@ public class ChargePointEntity {
     @Column(name = "charge_point_id", length = 50)
     private String chargePointId;
 
+    @Column(length = 50)
+    private String site;
+
     private String vendor;
     private String model;
 

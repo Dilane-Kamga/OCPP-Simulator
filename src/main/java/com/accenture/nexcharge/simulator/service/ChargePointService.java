@@ -74,6 +74,7 @@ public class ChargePointService {
 
         return new ChargePointDto(
                 cp.getChargePointId(),
+                cp.getSite(),
                 cp.getVendor(),
                 cp.getModel(),
                 cp.getSerialNumber(),

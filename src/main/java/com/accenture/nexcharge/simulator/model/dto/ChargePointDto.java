@@ -7,6 +7,7 @@ import java.util.List;
 
 public record ChargePointDto(
         String chargePointId,
+        String site,
         String vendor,
         String model,
         String serialNumber,
