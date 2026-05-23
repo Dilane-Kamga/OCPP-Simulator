@@ -6,12 +6,13 @@ import type { ScenarioName } from '../types';
 type Props = {
   scenario: ScenarioName;
   chargePointId?: string;
+  connectorId?: number;
   label: string;
   icon?: string;
-  variant?: 'global' | 'card';
+  variant?: 'global' | 'card' | 'connector';
 };
 
-export function ScenarioButton({ scenario, chargePointId, label, icon, variant = 'global' }: Props) {
+export function ScenarioButton({ scenario, chargePointId, connectorId, label, icon, variant = 'global' }: Props) {
   const [pending, setPending] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const wsState = useConsoleStore((s) => s.wsState);
@@ -22,7 +23,7 @@ export function ScenarioButton({ scenario, chargePointId, label, icon, variant =
     setPending(true);
     setErr(null);
     try {
-      await postScenario({ scenario, chargePointId });
+      await postScenario({ scenario, chargePointId, connectorId });
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       setErr(msg);
@@ -36,7 +37,9 @@ export function ScenarioButton({ scenario, chargePointId, label, icon, variant =
   const sized =
     variant === 'global'
       ? 'px-3 py-1.5 text-sm bg-white/10 hover:bg-white/20 text-white'
-      : 'px-2 py-1 text-xs bg-slate-800/80 hover:bg-slate-700 text-white';
+      : variant === 'connector'
+        ? 'px-1.5 py-0.5 text-[10px] bg-slate-800/80 hover:bg-slate-700 text-white'
+        : 'px-2 py-1 text-xs bg-slate-800/80 hover:bg-slate-700 text-white';
 
   return (
     <div className="relative">

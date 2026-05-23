@@ -23,7 +23,7 @@ export async function fetchPowerHistory(chargePointId: string, lastMinutes: numb
     .sort((a, b) => a.t - b.t);
 }
 
-export type ScenarioPayload = { scenario: string; chargePointId?: string };
+export type ScenarioPayload = { scenario: string; chargePointId?: string; connectorId?: number };
 
 export async function postScenario(payload: ScenarioPayload): Promise<void> {
   const res = await fetch('/api/simulator/scenario', {

@@ -58,8 +58,6 @@ public class SimulatorManager {
     private static final int FAULT_RECOVERY_MIN_SECONDS = 30;
     /** Random additional seconds on top of the min. Total range: 30-120s. */
     private static final int FAULT_RECOVERY_JITTER_SECONDS = 90;
-    /** Default connector to use for auto-triggered sessions. */
-    private static final int DEFAULT_AUTO_CONNECTOR_ID = 1;
     /** Fallback transaction id range when CSMS confirmation cannot be parsed. */
     private static final int FALLBACK_TXN_ID_BASE = 100_000;
     private static final int FALLBACK_TXN_ID_RANGE = 900_000;
@@ -122,16 +120,17 @@ public class SimulatorManager {
             @Override
             public void onRemoteStart(int connectorId, String idTag) {
                 ChargePointSimulator s = simulators.get(chargePointId);
-                if (s != null) {
-                    s.startSession(connectorId, idTag);
+                if (s == null) return;
+                if (s.isConnectorAvailable(connectorId)) {
+                    triggerSessionStart(s, connectorId, idTag);
                 }
             }
 
             @Override
             public void onRemoteStop(int transactionId) {
                 ChargePointSimulator s = simulators.get(chargePointId);
-                if (s != null && transactionId == nullSafe(s.getCurrentTransactionId())) {
-                    s.stopSession("Remote");
+                if (s != null) {
+                    s.stopSessionByTransactionId(transactionId, "Remote");
                 }
             }
 
@@ -153,8 +152,8 @@ public class SimulatorManager {
             @Override
             public void onUnlock(int connectorId) {
                 ChargePointSimulator s = simulators.get(chargePointId);
-                if (s != null && s.getState() == SimulatorState.CHARGING) {
-                    s.stopSession("UnlockCommand");
+                if (s != null && s.getConnectorState(connectorId) == SimulatorState.CHARGING) {
+                    s.stopSession(connectorId, "UnlockCommand");
                 }
             }
 
@@ -235,15 +234,24 @@ public class SimulatorManager {
         }
         for (ChargePointSimulator s : simulators.values()) {
             try {
-                if (s.getState() == SimulatorState.AVAILABLE
-                        && globalRandom.nextDouble() < properties.autoSessionProbability()) {
-                    String idTag = pickRandomRfid();
-                    s.startSession(DEFAULT_AUTO_CONNECTOR_ID, idTag);
-                    finishPreparing(s);
-                } else if (s.getState() == SimulatorState.CHARGING
+                if (s.getState() == SimulatorState.FAULTED) {
+                    continue;
+                }
+                if (s.getState() == SimulatorState.CHARGING
                         && globalRandom.nextDouble() < properties.randomEventProbability()) {
-                    s.fault("GroundFailure");
-                    scheduleRecovery(s);
+                    Integer chargingConnector = pickChargingConnector(s);
+                    if (chargingConnector != null) {
+                        s.fault(chargingConnector, "GroundFailure");
+                        scheduleConnectorRecovery(s, chargingConnector);
+                    }
+                    continue;
+                }
+                int connectorCount = Math.max(1, s.getConfig().connectors());
+                for (int connectorId = 1; connectorId <= connectorCount; connectorId++) {
+                    if (s.isConnectorAvailable(connectorId)
+                            && globalRandom.nextDouble() < properties.autoSessionProbability()) {
+                        triggerSessionStart(s, connectorId, pickRandomRfid());
+                    }
                 }
             } catch (Exception e) {
                 log.warn("world tick error for {}: {}", s.getConfig().id(), e.getMessage());
@@ -251,23 +259,23 @@ public class SimulatorManager {
         }
     }
 
-    private void finishPreparing(ChargePointSimulator s) {
+    private void finishPreparing(ChargePointSimulator s, int connectorId) {
         scheduler.schedule(() -> {
             int txnId = -1;
             try {
-                Object confirmation = s.sendStartTransactionAndAwait().get();
+                Object confirmation = s.sendStartTransactionAndAwait(connectorId).get();
                 if (confirmation instanceof StartTransactionConfirmation stc
                         && stc.getTransactionId() != null) {
                     txnId = stc.getTransactionId();
                 }
             } catch (Exception e) {
-                log.debug("[{}] StartTransaction confirmation failed: {}",
-                        s.getConfig().id(), e.getMessage());
+                log.debug("[{}] StartTransaction confirmation failed for c{}: {}",
+                        s.getConfig().id(), connectorId, e.getMessage());
             }
             if (txnId > 0) {
-                s.confirmCablePluggedAndStartCharging(txnId);
+                s.confirmCablePluggedAndStartCharging(connectorId, txnId);
             } else {
-                s.confirmCablePluggedAndStartCharging(
+                s.confirmCablePluggedAndStartCharging(connectorId,
                         globalRandom.nextInt(FALLBACK_TXN_ID_RANGE) + FALLBACK_TXN_ID_BASE);
             }
         }, CABLE_PLUG_DELAY_SECONDS, TimeUnit.SECONDS);
@@ -276,6 +284,23 @@ public class SimulatorManager {
     private void scheduleRecovery(ChargePointSimulator s) {
         long delay = FAULT_RECOVERY_MIN_SECONDS + globalRandom.nextInt(FAULT_RECOVERY_JITTER_SECONDS);
         scheduler.schedule(s::recoverFromFault, delay, TimeUnit.SECONDS);
+    }
+
+    private void scheduleConnectorRecovery(ChargePointSimulator s, int connectorId) {
+        long delay = FAULT_RECOVERY_MIN_SECONDS + globalRandom.nextInt(FAULT_RECOVERY_JITTER_SECONDS);
+        scheduler.schedule(() -> s.recoverConnectorFromFault(connectorId), delay, TimeUnit.SECONDS);
+    }
+
+    private Integer pickChargingConnector(ChargePointSimulator s) {
+        int connectorCount = Math.max(1, s.getConfig().connectors());
+        java.util.List<Integer> charging = new java.util.ArrayList<>();
+        for (int connectorId = 1; connectorId <= connectorCount; connectorId++) {
+            if (s.getConnectorState(connectorId) == SimulatorState.CHARGING) {
+                charging.add(connectorId);
+            }
+        }
+        if (charging.isEmpty()) return null;
+        return charging.get(globalRandom.nextInt(charging.size()));
     }
 
     private String pickRandomRfid() {
@@ -299,11 +324,11 @@ public class SimulatorManager {
      * without waiting for the next {@link #worldTick()}.
      */
     public void triggerSessionStart(ChargePointSimulator s, int connectorId, String idTag) {
-        if (s.getState() != SimulatorState.AVAILABLE) {
+        if (!s.isConnectorAvailable(connectorId)) {
             return;
         }
         s.startSession(connectorId, idTag);
-        finishPreparing(s);
+        finishPreparing(s, connectorId);
     }
 
     @PreDestroy

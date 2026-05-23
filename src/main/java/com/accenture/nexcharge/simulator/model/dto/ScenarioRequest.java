@@ -4,5 +4,10 @@ import jakarta.validation.constraints.NotBlank;
 
 public record ScenarioRequest(
         @NotBlank String scenario,
-        String chargePointId
-) {}
+        String chargePointId,
+        Integer connectorId
+) {
+    public ScenarioRequest(String scenario, String chargePointId) {
+        this(scenario, chargePointId, null);
+    }
+}

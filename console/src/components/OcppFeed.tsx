@@ -9,7 +9,7 @@ function formatLine(e: LiveEvent): { arrow: string; arrowClass: string; action: 
   const isFault = e.type === 'FAULT';
   const isInbound = inboundTypes.has(e.type);
   const arrow = isInbound ? '→' : '←';
-  const arrowClass = isFault ? 'text-red-400' : isInbound ? 'text-blue-400' : 'text-green-400';
+  const arrowClass = isFault ? 'text-red-500' : isInbound ? 'text-blue-500' : 'text-green-500';
 
   let detail = '';
   const data = e.data as Record<string, any>;
@@ -27,6 +27,7 @@ function formatLine(e: LiveEvent): { arrow: string; arrowClass: string; action: 
 }
 
 export function OcppFeed({ chargePointId }: Props) {
+  const cp = useConsoleStore((s) => s.chargePoints[chargePointId]);
   const events = useConsoleStore((s) => s.eventsByCp[chargePointId] ?? []);
   const ref = useRef<HTMLDivElement>(null);
   const [paused, setPaused] = useState(false);
@@ -36,23 +37,32 @@ export function OcppFeed({ chargePointId }: Props) {
     ref.current.scrollTop = 0;
   }, [events, paused]);
 
+  const isLight = cp?.site === 'NEXTERACOM';
+  const surface = isLight
+    ? 'bg-slate-100 border border-slate-200'
+    : 'bg-black/30';
+  const tsClass = isLight ? 'text-slate-500' : 'text-slate-500';
+  const actionClass = isLight ? 'text-slate-800' : 'text-slate-200';
+  const detailClass = isLight ? 'text-slate-600' : 'text-slate-400';
+  const emptyClass = isLight ? 'text-slate-500' : 'text-slate-500';
+
   return (
     <div
       ref={ref}
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
-      className="font-mono text-xs h-48 overflow-y-auto bg-black/30 rounded-lg p-2 space-y-0.5"
+      className={`font-mono text-xs h-48 overflow-y-auto rounded-lg p-2 space-y-0.5 ${surface}`}
     >
-      {events.length === 0 && <div className="text-slate-500">No OCPP traffic yet…</div>}
+      {events.length === 0 && <div className={emptyClass}>No OCPP traffic yet…</div>}
       {events.map((e, i) => {
         const ts = new Date(e.timestamp).toLocaleTimeString();
         const f = formatLine(e);
         return (
           <div key={`${e.timestamp}-${i}`} className="flex gap-2 whitespace-nowrap">
-            <span className="text-slate-500">{ts}</span>
+            <span className={tsClass}>{ts}</span>
             <span className={f.arrowClass}>{f.arrow}</span>
-            <span className="text-slate-200">{f.action}</span>
-            <span className="text-slate-400 truncate">{f.detail}</span>
+            <span className={actionClass}>{f.action}</span>
+            <span className={`${detailClass} truncate`}>{f.detail}</span>
           </div>
         );
       })}

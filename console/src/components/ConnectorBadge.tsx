@@ -1,6 +1,7 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { useConsoleStore } from '../store/consoleStore';
 import type { ConnectorStatus } from '../types';
+import { ScenarioButton } from './ScenarioButton';
 
 type Props = { chargePointId: string; connectorId: number };
 
@@ -25,9 +26,8 @@ const STATUS_GLOW: Record<string, string> = {
 };
 
 export function ConnectorBadge({ chargePointId, connectorId }: Props) {
-  const connector = useConsoleStore((s) =>
-    s.chargePoints[chargePointId]?.connectors.find((c) => c.connectorId === connectorId)
-  );
+  const cp = useConsoleStore((s) => s.chargePoints[chargePointId]);
+  const connector = cp?.connectors.find((c) => c.connectorId === connectorId);
   if (!connector) return null;
 
   const status = connector.status as ConnectorStatus;
@@ -35,15 +35,22 @@ export function ConnectorBadge({ chargePointId, connectorId }: Props) {
   const glow = STATUS_GLOW[status] ?? '';
   const isFaulted = status === 'Faulted';
   const isCharging = status === 'Charging';
+  const isLight = cp?.site === 'NEXTERACOM';
+
+  const surface = isLight
+    ? 'bg-white border border-slate-200 text-slate-900'
+    : 'bg-black/30 border border-white/10 text-white';
+  const labelClass = isLight ? 'text-slate-500' : 'text-slate-400';
+  const subClass = isLight ? 'text-slate-600' : 'text-slate-400';
 
   return (
     <motion.div
       animate={isFaulted ? { x: [0, -4, 4, -4, 4, 0] } : { x: 0 }}
       transition={{ duration: 0.3 }}
-      className={`relative rounded-xl p-4 bg-black/30 border border-white/10 ${glow}`}
+      className={`relative rounded-xl p-4 ${surface} ${glow}`}
     >
       <div className="flex items-center justify-between mb-2">
-        <span className="text-xs uppercase tracking-wider text-slate-400">C{connectorId}</span>
+        <span className={`text-xs uppercase tracking-wider ${labelClass}`}>C{connectorId}</span>
         <motion.span
           key={status}
           initial={{ scale: 0.8, opacity: 0 }}
@@ -55,14 +62,32 @@ export function ConnectorBadge({ chargePointId, connectorId }: Props) {
       <div className="text-2xl font-bold tabular-nums">
         {connector.currentPowerKw == null ? '—' : `${connector.currentPowerKw.toFixed(1)} kW`}
       </div>
-      <div className="text-sm text-slate-400 capitalize">{status}</div>
+      <div className={`text-sm capitalize ${subClass}`}>{status}</div>
+      <div className="flex items-center gap-1 mt-2">
+        <ScenarioButton
+          scenario="FAULT_ONE"
+          chargePointId={chargePointId}
+          connectorId={connectorId}
+          label="FAULT"
+          icon="⚠"
+          variant="connector"
+        />
+        <ScenarioButton
+          scenario="START_ONE"
+          chargePointId={chargePointId}
+          connectorId={connectorId}
+          label="START"
+          icon="▶"
+          variant="connector"
+        />
+      </div>
       <AnimatePresence>
         {isCharging && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="absolute top-2 right-2 text-yellow-300 text-lg"
+            className="absolute top-2 right-2 text-yellow-500 text-lg"
           >
             ⚡
           </motion.div>
@@ -72,7 +97,7 @@ export function ConnectorBadge({ chargePointId, connectorId }: Props) {
             initial={{ scale: 0, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0, opacity: 0 }}
-            className="absolute top-2 right-2 text-red-400 text-lg"
+            className="absolute top-2 right-2 text-red-500 text-lg"
           >
             ⚠
           </motion.div>

@@ -52,4 +52,4 @@ export type PowerPoint = { t: number; kw: number };  // t = epoch ms
 export type WsState = 'CONNECTING' | 'CONNECTED' | 'RECONNECTING';
 
 export type ScenarioName =
-  | 'START_ALL' | 'FAULT_ONE' | 'STOP_ALL' | 'DISCONNECT_ONE' | 'PEAK_LOAD' | 'RESET_ALL';
+  | 'START_ALL' | 'START_ONE' | 'FAULT_ONE' | 'STOP_ALL' | 'DISCONNECT_ONE' | 'PEAK_LOAD' | 'RESET_ALL';

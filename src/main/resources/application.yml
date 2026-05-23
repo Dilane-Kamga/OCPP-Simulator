@@ -31,7 +31,7 @@ simulator:
   acceleration-factor: 15
   heartbeat-interval-seconds: 30
   meter-interval-seconds: 10
-  auto-session-probability: 0.05
+  auto-session-probability: 0.20
   random-event-probability: 0.02
   charge-points:
     - id: BORNE_A

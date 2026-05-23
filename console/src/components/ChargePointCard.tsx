@@ -38,9 +38,7 @@ export function ChargePointCard({ chargePointId }: Props) {
       </div>
 
       <div className="flex items-center gap-2">
-        <ScenarioButton scenario="FAULT_ONE" chargePointId={cp.chargePointId} label="FAULT" icon="⚠" variant="card" />
         <ScenarioButton scenario="DISCONNECT_ONE" chargePointId={cp.chargePointId} label="DISCONNECT" icon="↯" variant="card" />
-        <ScenarioButton scenario="START_ALL" label="START" icon="▶" variant="card" />
       </div>
     </motion.div>
   );

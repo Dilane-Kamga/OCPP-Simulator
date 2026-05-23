@@ -84,13 +84,18 @@ export const useConsoleStore = create<State & Actions>((set, get) => ({
             chargePoints: { ...s.chargePoints, [chargePointId]: { ...cp, status: newStatus } },
           }));
         } else {
+          const idle = newStatus === 'Available' || newStatus === 'Finishing' || newStatus === 'Unavailable';
           set((s) => ({
             chargePoints: {
               ...s.chargePoints,
               [chargePointId]: {
                 ...cp,
                 connectors: cp.connectors.map((c) =>
-                  c.connectorId === event.connectorId ? { ...c, status: newStatus } : c
+                  c.connectorId === event.connectorId
+                    ? idle
+                      ? { ...c, status: newStatus, currentPowerKw: 0, currentAmps: 0 }
+                      : { ...c, status: newStatus }
+                    : c
                 ),
               },
             },
